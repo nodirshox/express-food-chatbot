@@ -4,7 +4,7 @@ const TelegramBot = require('node-telegram-bot-api'); // Telegram bot library fo
 const token = process.env.TOKEN; // Token of channel by @botfather
 const api_link = process.env.API;
 
-bot.on("polling_error", (err) => console.log(err));
+
 
 
 //const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
@@ -15,6 +15,7 @@ const bot = new TelegramBot(token, {webHook: {
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
 
+bot.on("polling_error", (err) => console.log(err));
 
 const menu = [
     ["Bizning menu"],
