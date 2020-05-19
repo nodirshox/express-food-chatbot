@@ -1,0 +1,29 @@
+{
+  "name": "express-food-chatbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nodirshox/express-food-chatbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nodirshox/express-food-chatbot/issues"
+  },
+  "homepage": "https://github.com/nodirshox/express-food-chatbot#readme",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "node-telegram-bot-api": "^0.50.0"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "nodemon": "^2.0.4"
+  }
+}
