@@ -1,20 +1,24 @@
 require('dotenv').config(); // Getting token from env
 const axios = require('axios');
 const TelegramBot = require('node-telegram-bot-api'); // Telegram bot library for node-js
-
 const token = process.env.TOKEN; // Token of channel by @botfather
 const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
-
-bot.on("polling_error", (err) => console.log(err));
-
 const api_link = process.env.API;
+
+//bot.on("polling_error", (err) => console.log(err));
+
+const url = process.env.APP_URL || 'https://express-chatbot.herokuapp.com:443';
+//const bot = new TelegramBot(token, options);
+const bot = new TelegramBot(token, {webHook: {
+    port: process.env.PORT
+  } }, ); // Run out bot on local
+bot.setWebHook(`${url}/bot${token}`);
+
 
 const menu = [
     ["Bizning menu"],
     ["Yordam", "Sozlamalar"] 
 ]
-
-
 
 // Starting point and request phone number
 bot.onText(/\/start/, function(msg) {
