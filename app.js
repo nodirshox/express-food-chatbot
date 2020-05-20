@@ -7,15 +7,15 @@ const api_link = process.env.API;
 
 
 
-//const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
+const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
 
-
+/*
 const url = process.env.APP_URL || 'https://express-chatbot.herokuapp.com:443';
 const bot = new TelegramBot(token, {webHook: {
     port: process.env.PORT
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
-
+*/
 
 bot.on("polling_error", (err) => console.log(err));
 
@@ -61,10 +61,10 @@ bot.on('message', function(msg) {
                     //console.log("Old user detected")
                 }
             }
-            console.log("Status new user => " + newUser) // true bolsa yangi user och, bolsa else ga ot
+            //console.log("Status new user => " + newUser) // true bolsa yangi user och, bolsa else ga ot
 
             if(newUser == true) {
-                console.log('create new user');
+                //console.log('create new user');
                 axios.post(`${api_link}api/user/client/store`, {
                     name: msg.contact.first_name,
                     surname: msg.contact.last_name,
@@ -77,9 +77,9 @@ bot.on('message', function(msg) {
                     console.log(error);
                 });
             } else {
-                console.log('old user')
+                //console.log('old user')
                 if(chatId === oldUserTelegramId) {
-                    console.log("tg id are same")
+                    //console.log("tg id are same")
                     bot.sendMessage(chatId, `Botimizga qayta tashrif buyurgangiz uchun rahmat`)
                     botMenu(chatId)
                 } else {
@@ -91,7 +91,8 @@ bot.on('message', function(msg) {
                         phone: phone_number
                     }).then((response) => {
                         //console.log(response.data)
-                        bot.sendMessage(chatId, `id yangilandi`)
+                        //telegramId updated
+                        bot.sendMessage(chatId, `Botimizga qayta tashrif buyurgangiz uchun rahmat`)
                         botMenu(chatId)
                     }, (error) => {
                     console.log(error);
