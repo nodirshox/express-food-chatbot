@@ -9,11 +9,13 @@ const api_link = process.env.API;
 
 //const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
 
+
 const url = process.env.APP_URL || 'https://express-chatbot.herokuapp.com:443';
 const bot = new TelegramBot(token, {webHook: {
     port: process.env.PORT
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
+
 
 bot.on("polling_error", (err) => console.log(err));
 
@@ -40,44 +42,62 @@ bot.onText(/\/start/, function(msg) {
 })
 
 bot.on('message', function(msg) {
-
     var chatId = msg.chat.id
     // If user send contact message and check from database
     if(msg.contact != null) {
         var phone_number = msg.contact.phone_number.replace(/\+/g,'')
         axios.get(`${api_link}api/user/client/get`).then(response =>{
-            var newUser = true;
+            var newUser = true
+            var oldUserTelegramId
+            var oldUserId
             for(var i = 0; i < response.data.length; i++) {
                 var numbers = response.data[i].phone.replace(/ /g,'')
                 numbers = numbers.replace(/\+/g,'')
-                console.log(phone_number + ' vs ' + numbers)
-                if(phone_number === response.data[i].phone) {
+                //console.log(phone_number + ' vs ' + numbers)
+                if(phone_number === numbers) {
                     newUser = false;
+                    oldUserTelegramId = response.data[i].telegramId
+                    oldUserId = response.data[i]._id
+                    //console.log("Old user detected")
                 }
             }
-            if(newUser) {
+            console.log("Status new user => " + newUser) // true bolsa yangi user och, bolsa else ga ot
+
+            if(newUser == true) {
                 console.log('create new user');
                 axios.post(`${api_link}api/user/client/store`, {
                     name: msg.contact.first_name,
+                    surname: msg.contact.last_name,
                     phone: msg.contact.phone_number,
                     telegramId: chatId
                 }).then((response) => {
-                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
+                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdingiz`)
                     botMenu(chatId)
                 }, (error) => {
-                console.log(error);
+                    console.log(error);
                 });
             } else {
                 console.log('old user')
-                axios.post(`${api_link}api/user/client/store`, {
-                    name: msg.contact.first_name,
-                    telegramId: chatId
-                }).then((response) => {
-                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
+                if(chatId === oldUserTelegramId) {
+                    console.log("tg id are same")
+                    bot.sendMessage(chatId, `Botimizga qayta tashrif buyurgangiz uchun rahmat`)
                     botMenu(chatId)
-                }, (error) => {
-                console.log(error);
-                });
+                } else {
+                    axios.post(`${api_link}api/user/client/store`, {
+                        id: oldUserId,
+                        name: msg.contact.first_name,
+                        surname: msg.contact.last_name,
+                        telegramId: chatId,
+                        phone: phone_number
+                    }).then((response) => {
+                        //console.log(response.data)
+                        bot.sendMessage(chatId, `id yangilandi`)
+                        botMenu(chatId)
+                    }, (error) => {
+                    console.log(error);
+                    });
+                }
+               
             }
         }).catch(err =>{
             console.log(err)
