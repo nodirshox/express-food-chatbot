@@ -112,7 +112,7 @@ bot.on('message', function(msg) {
                     longlat: longlat,
                     foods: stringFood,
                     restaurant: restaurant,
-                    comment: " ",
+                    comment: "-",
                     status: 1,
                     address: address
                 }).then((response) => {
@@ -158,7 +158,7 @@ bot.on("callback_query", function(query) {
                     var chat_id = query.message.chat.id;
                     var message_id = query.message.message_id;
                     var a = obj.categories.map((x, xi) => ({
-                        text: x.name,
+                        text: x.name.toUpperCase(),
                         callback_data: JSON.stringify({
                             type: 'item',
                             id: data.id,
@@ -254,7 +254,7 @@ bot.on("callback_query", function(query) {
         axios.get(`${api_link}api/food/get?id=${data.id}`).then(response =>{
                     var obj = response.data;
                     var html = `<b>Nomi:</b> ${obj.name}\n<b>Narxi:</b> ${obj.price.toLocaleString()} so'm\n<b>Qo'shimcha:</b> ${obj.description}\n<b>Taom tarkibi:</b> ${obj.ingredients}\n<a href="${obj.image.url}">&#8205;</a>`
-                    if(obj.stock > 0) {
+                    if(obj.stock > 0 || obj.stock === null) {
                         bot.editMessageText(html + '👇 Taom sonini tanlang: <u>DONA</u> / <u>KG</u> 👇', {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
@@ -352,6 +352,14 @@ bot.on("callback_query", function(query) {
                             parse_mode: 'HTML',
                             'reply_markup': {
                                 'inline_keyboard': [
+                                    [
+                                        {
+                                            text: "🗑 Savatchani tozalash",
+                                            callback_data: JSON.stringify({
+                                                type: 'busket'
+                                            })
+                                        } 
+                                    ],
                                     [{
                                         text: "⏪ Ortga",
                                         callback_data: JSON.stringify({
