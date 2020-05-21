@@ -5,17 +5,15 @@ const token = process.env.TOKEN; // Token of channel by @botfather
 const api_link = process.env.API;
 
 
-
-
-const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
-
-/*
 const url = process.env.APP_URL || 'https://express-chatbot.herokuapp.com:443';
 const bot = new TelegramBot(token, {webHook: {
     port: process.env.PORT
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
-*/
+
+
+//const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
+
 
 bot.on("polling_error", (err) => console.log(err));
 
@@ -42,63 +40,44 @@ bot.onText(/\/start/, function(msg) {
 })
 
 bot.on('message', function(msg) {
+
     var chatId = msg.chat.id
     // If user send contact message and check from database
     if(msg.contact != null) {
         var phone_number = msg.contact.phone_number.replace(/\+/g,'')
         axios.get(`${api_link}api/user/client/get`).then(response =>{
-            var newUser = true
-            var oldUserTelegramId
-            var oldUserId
+            var newUser = true;
             for(var i = 0; i < response.data.length; i++) {
                 var numbers = response.data[i].phone.replace(/ /g,'')
                 numbers = numbers.replace(/\+/g,'')
                 //console.log(phone_number + ' vs ' + numbers)
-                if(phone_number === numbers) {
+                if(phone_number === response.data[i].phone) {
                     newUser = false;
-                    oldUserTelegramId = response.data[i].telegramId
-                    oldUserId = response.data[i]._id
-                    //console.log("Old user detected")
                 }
             }
-            //console.log("Status new user => " + newUser) // true bolsa yangi user och, bolsa else ga ot
-
-            if(newUser == true) {
-                //console.log('create new user');
+            if(newUser) {
+                console.log('create new user');
                 axios.post(`${api_link}api/user/client/store`, {
                     name: msg.contact.first_name,
-                    surname: msg.contact.last_name,
                     phone: msg.contact.phone_number,
                     telegramId: chatId
                 }).then((response) => {
-                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdingiz`)
+                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
                     botMenu(chatId)
                 }, (error) => {
-                    console.log(error);
+                console.log(error);
                 });
             } else {
-                //console.log('old user')
-                if(chatId === oldUserTelegramId) {
-                    //console.log("tg id are same")
-                    bot.sendMessage(chatId, `Botimizga qayta tashrif buyurgangiz uchun rahmat`)
+                console.log('old user')
+                axios.post(`${api_link}api/user/client/store`, {
+                    name: msg.contact.first_name,
+                    telegramId: chatId
+                }).then((response) => {
+                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
                     botMenu(chatId)
-                } else {
-                    axios.post(`${api_link}api/user/client/store`, {
-                        id: oldUserId,
-                        name: msg.contact.first_name,
-                        surname: msg.contact.last_name,
-                        telegramId: chatId,
-                        phone: phone_number
-                    }).then((response) => {
-                        //console.log(response.data)
-                        //telegramId updated
-                        bot.sendMessage(chatId, `Botimizga qayta tashrif buyurgangiz uchun rahmat`)
-                        botMenu(chatId)
-                    }, (error) => {
-                    console.log(error);
-                    });
-                }
-               
+                }, (error) => {
+                console.log(error);
+                });
             }
         }).catch(err =>{
             console.log(err)
@@ -110,12 +89,15 @@ bot.on('message', function(msg) {
     if(msg.text === 'Bizning menu') {
         restaurant(chatId)
     }
+    if(msg.text === '◀️ Ortga') {
+        botMenu(chatId)
+    }
     if(msg.location) {
-        axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(response =>{
-            var restaurant = response.data.restaurant
-            var user = response.data._id;
+        axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(responses =>{
+            var restaurant = responses.data.restaurant
+            var user = responses.data._id;
             var longlat = msg.location.longitude + '&' + msg.location.latitude
-            var foods = response.data.cart.map((f) => {
+            var foods = responses.data.cart.map((f) => {
                 var obj = {
                     food: f.food._id,
                     count: f.quantity
@@ -134,7 +116,15 @@ bot.on('message', function(msg) {
                     status: 1,
                     address: address
                 }).then((response) => {
-                    bot.sendMessage(chatId, "Buyurtma qa'bul qilindi.")
+                    //console.log(response.data)
+                    var total = 0;
+                    const html = responses.data.cart.map((f, i) => {
+                        total += f.quantity * f.food.price;
+                        return `${i +1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
+                    }).join('\n')
+                    bot.sendMessage(chatId, `✅ Buyurtma qa'bul qilindi.\n${html}\n<b>UMUMIY:</b> ${total.toLocaleString()} so'm\n<b>Manzil:</b> ${address}`, {
+                        parse_mode: 'HTML'
+                    })
                     botMenu(chatId)
                 }, (error) => {
                 console.log(error);
@@ -164,7 +154,7 @@ bot.on("callback_query", function(query) {
                     } else {
                         status = '❌ Vaqtincha ishlamayapti'
                     }
-                    var html = `<b>Nomi:</b> ${obj.name}\n<b>Aloqa:</b> ${obj.phone}\n<b>Ish vaqti:</b> ${obj.workingHours}\n<b>Minium buyurtma narxi:</b> ${obj.minimumOrderCost.toLocaleString()} so'm\n<b>Yetkazib berish:</b> ${obj.delivery.price.toLocaleString()} so'm\n<b>Yetkazib berish vaqti:</b> ${obj.delivery.time}\n<b>Yetkazib berish holati:</b> ${status} <a href="${obj.image.url}">&#8205;</a>`
+                    var html = `<b>${obj.name}</b>\n☎️ ${obj.phone}\n🕔 ${obj.workingHours}\n<b>Minium buyurtma narxi:</b> ${obj.minimumOrderCost.toLocaleString()} so'm\n<b>Yetkazib berish:</b> ${obj.delivery.price.toLocaleString()} so'm\n<b>Yetkazib berish vaqti:</b> ${obj.delivery.time}\n<b>Yetkazib berish holati:</b> ${status} <a href="${obj.image.url}">&#8205;</a>`
                     var chat_id = query.message.chat.id;
                     var message_id = query.message.message_id;
                     var a = obj.categories.map((x, xi) => ({
@@ -217,7 +207,7 @@ bot.on("callback_query", function(query) {
                     var message_id = query.message.message_id;
                     var obj = response.data[i];
                     var a = obje.map((x, xi) => ({
-                        text: `${x.name} - ${x.price.toLocaleString()} so'm`,
+                        text: `${x.name}`,
                         callback_data: JSON.stringify({
                             type: 'food',
                             id: x._id
@@ -244,7 +234,7 @@ bot.on("callback_query", function(query) {
                     keyboard.push(back)
 
 
-                    var html = `<b>${obj.name}</b> \n<b>Aloqa:</b> ${obj.phone}<a href="${obj.image.url}">&#8205;</a>`
+                    var html = `Taomni tanlang`
                     bot.editMessageText(html, {
                         chat_id: chat_id,
                         message_id: message_id,
@@ -263,9 +253,9 @@ bot.on("callback_query", function(query) {
         // Show food
         axios.get(`${api_link}api/food/get?id=${data.id}`).then(response =>{
                     var obj = response.data;
-                    var html = `<b>Nomi:</b> ${obj.name}\n<b>Narxi:</b> ${obj.price.toLocaleString()} so'm\n<b>Qo'shimcha:</b> ${obj.description}\n<b>Taom tarkibi:</b> ${obj.ingredients}\n👇 Taom sonini tanlang: <u>DONA</u> / <u>KG</u> 👇<a href="${obj.image.url}">&#8205;</a>`
+                    var html = `<b>Nomi:</b> ${obj.name}\n<b>Narxi:</b> ${obj.price.toLocaleString()} so'm\n<b>Qo'shimcha:</b> ${obj.description}\n<b>Taom tarkibi:</b> ${obj.ingredients}\n<a href="${obj.image.url}">&#8205;</a>`
                     if(obj.stock > 0) {
-                        bot.editMessageText(html, {
+                        bot.editMessageText(html + '👇 Taom sonini tanlang: <u>DONA</u> / <u>KG</u> 👇', {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -313,7 +303,7 @@ bot.on("callback_query", function(query) {
                             }
                         })
                     } else {
-                        bot.editMessageText(html + "\n❗️ Ushbu taomni hozirda buyurtma qilib bo'lmaydi. ", {
+                        bot.editMessageText(html + "❗️ Ushbu taomni hozirda buyurtma qilib bo'lmaydi. ", {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -344,10 +334,16 @@ bot.on("callback_query", function(query) {
         // Add to busket
         axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then((response) => {
             var client = response.data._id;
+            var initial_qunatity = 0;
+            for(var i=0;i<response.data.cart.length;i++) {
+                if(data.id === response.data.cart[i].food._id){
+                    initial_qunatity+=response.data.cart[i].quantity
+                }
+            }
                 axios.post(`${api_link}api/user/client/cart-action`, {
                     clientId: client,
                     foodId: data.id,
-                    quantity: data.quantity
+                    quantity: data.quantity + initial_qunatity
                 }).then((response) => {
                     if(response.data.result == 'error') {
                         bot.editMessageText(`❗️ Boshqa restorant taomini qo'shmoqchisiz. Iltimos, bitta restarantda buyurtma qiling! Agar ushbu restorantdan buyurtma qilmoqchi bo'lsangiz, savatchangizni tozalang`, {
@@ -376,7 +372,7 @@ bot.on("callback_query", function(query) {
                             var restorantid = response.data.restaurant
                             var obj = response.data;
                             bot.answerCallbackQuery(query.id, {text: `Savatchaga qo'shildi`, show_alert: true})
-                            var html = `✅ Savatchaga qo'shildi\n<b>Nomi:</b> ${obj.name}\n<b>Narxi:</b> ${obj.price.toLocaleString()} so'm\n<a href="${obj.image.url}">&#8205;</a>`        
+                            var html = `✅ Savatchaga ${obj.name} qo'shildi`        
                             bot.editMessageText(html, {
                                 chat_id: query.message.chat.id,
                                 message_id: query.message.message_id,
@@ -412,33 +408,41 @@ bot.on("callback_query", function(query) {
             console.log(err);
         })
         
-    } else if (data.type === 'empty') {
+    } else if (data.type === "empty_busket"){
         axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then((response) => {
-            if(response.data.cart.length > 0) {
-                    client = response.data._id;
-                    axios.post(`${api_link}api/user/client/cart-action`, {
-                        clientId: client,
-                        foodId: data.id,
-                        quantity: 0
-                    }).then((response) => {
-                        //console.log(`O'chirildi`)
-                    }, (error) => {
-                        console.log(`xatolik`)
-                        //console.log(error);
-                    });
-                bot.answerCallbackQuery(query.id, {text: `Olib tashlandi.`})
-                if(response.data.cart.length > 1) {
-                    busket(query)
-                } else {
-                    restaurant(query.from.id)
-                }
-            } else {
-                bot.answerCallbackQuery(query.id, {text: `Savatcha bo'sht`, show_alert: true})
+            //console.log(response.data.cart)
+            for(var i = 0; i < response.data.cart.length; i++) {
+                console.log("O'chirilmoqchi => " + response.data.cart[i].food.name)
+                axios.post(`${api_link}api/user/client/cart-action`, {
+                    clientId: response.data._id,
+                    foodId: response.data.cart[i].food._id,
+                    quantity: 0
+                }).then((response) => {
+                    console.log("Deleted\n")
+                }, (error) => {
+                    console.log(`Xatolik\n`)
+                    //console.log(error.data);
+                });
             }
-        }).catch(err =>{
-            console.log(err);
+            bot.answerCallbackQuery(query.id, {text: `Savatcha bo'shatildi`})
+            bot.editMessageText(`😌 Savatchangiz bo'sht`, {
+                chat_id: query.message.chat.id,
+                message_id: query.message.message_id,
+                parse_mode: 'HTML',
+                'reply_markup': {
+                    'inline_keyboard': [
+                        [{
+                            text: "🍲 Taom tanlash",
+                            callback_data: JSON.stringify({
+                                type: 'allrestaurants'
+                            })
+                        }]
+                    ]
+                }
+            })
+
         })
-    } else if (data.type === 'allrestaurants') {
+    }else if (data.type === 'allrestaurants') {
         // Show all restaurants
         axios.get(`${api_link}api/restaurant/get`).then(response =>{
             var a = response.data.map((x, xi) => ({
@@ -479,13 +483,19 @@ bot.on("callback_query", function(query) {
             console.log(err);
         })
     } else if(data.type === 'orderbyuser') {
-        bot.sendMessage(query.message.chat.id, "Joylashgan joyingizni yuboring", {
+        bot.editMessageText("📍 Joylashgan joyingizni yuboring", {
+            chat_id: query.message.chat.id,
+            message_id: query.message.message_id,
+        })
+        bot.sendMessage(query.from.id, '👇 👇 👇', {
             reply_markup: {
                 resize_keyboard: true,
                 keyboard: [
                     [{
-                        text: "Yuborish",
+                        text: "📍 Yuborish",
                         request_location: true
+                    },{
+                        text: '◀️ Ortga'
                     }]
                 ]
             }
@@ -552,33 +562,25 @@ function restaurant(chatId) {
 function busket(query){
     axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then(response =>{
         if(response.data.cart.length > 0) {
-            var keyboard = response.data.cart.map((x, xi) => ([{
-                text: `${x.food.name}`,
+            var keyboard = [[{
+                text: `🗑 Savatchani bo'shatish`,
                 callback_data: JSON.stringify({
-                    type: 'foodinfo',
-                    id: x.quantity * x.food.price
-                  })
-            }, {
-                text: "❌",
-                callback_data: JSON.stringify({
-                    type: 'empty',
-                    id: x.food._id
-                  })
-            }]))
-            var option = [{
+                    type: 'empty_busket'
+                })
+            }],
+            [{
                 text: '✅ Buyurtma berish',
                 callback_data: JSON.stringify({
                     type: 'orderbyuser'
                 })
-            }]
-            var option2 = [{
+            }],
+            [{
                 text: "🍲 Taom tanlash",
                 callback_data: JSON.stringify({
                     type: 'allrestaurants'
                 })
             }]
-            keyboard.push(option2)
-            keyboard.push(option)
+        ]
             var total = 0;
             var itemid
             const html = response.data.cart.map((f, i) => {
@@ -586,12 +588,7 @@ function busket(query){
                 itemid = f.food._id
                 return `${f.quantity} ta ${f.food.name} - ${f.quantity * f.food.price}`
             }).join('\n')
-            //console.log(itemid)
-            axios.get(`${api_link}api/food/get?id=${itemid}`).then(response =>{
-                //console.log(response.data.restaurant)
-            }).catch(err =>{
-
-            })
+            
             bot.editMessageText(`Savatchada:\n---------------\n${html}\n<b>Taomlar narxi</b>: ${total.toLocaleString()} so'm`, {
                 chat_id: query.message.chat.id,
                 message_id: query.message.message_id,
