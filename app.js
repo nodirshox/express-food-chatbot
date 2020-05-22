@@ -356,7 +356,8 @@ bot.on("callback_query", function(query) {
                                         {
                                             text: "🗑 Savatchani tozalash",
                                             callback_data: JSON.stringify({
-                                                type: 'busket'
+                                                type: 'empty_busket_back',
+                                                foodid: data.id
                                             })
                                         } 
                                     ],
@@ -419,38 +420,69 @@ bot.on("callback_query", function(query) {
     } else if (data.type === "empty_busket"){
         axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then((response) => {
             //console.log(response.data.cart)
-            for(var i = 0; i < response.data.cart.length; i++) {
-                console.log("O'chirilmoqchi => " + response.data.cart[i].food.name)
-                axios.post(`${api_link}api/user/client/cart-action`, {
-                    clientId: response.data._id,
-                    foodId: response.data.cart[i].food._id,
-                    quantity: 0
+            if(response.data.cart.length > 0) {
+                axios.post(`${api_link}api/user/client/clear-cart`, {
+                    clientId: response.data._id
                 }).then((response) => {
-                    console.log("Deleted\n")
+                    //bot.answerCallbackQuery(query.id, {text: `Savatchangiz bo'sht`})
+                    bot.editMessageText(`Savatchangiz bo'shtatildi`, {
+                        chat_id: query.message.chat.id,
+                        message_id: query.message.message_id,
+                        parse_mode: 'HTML',
+                        'reply_markup': {
+                            'inline_keyboard': [
+                                [{
+                                    text: "🍲 Taom tanlash",
+                                    callback_data: JSON.stringify({
+                                        type: 'allrestaurants'
+                                    })
+                                }]
+                            ]
+                        }
+                    })
                 }, (error) => {
                     console.log(`Xatolik\n`)
                     //console.log(error.data);
                 });
+            } else {
+                bot.answerCallbackQuery(query.id, {text: `Savatchangiz bo'sht`})
             }
-            bot.answerCallbackQuery(query.id, {text: `Savatcha bo'shatildi`})
-            bot.editMessageText(`😌 Savatchangiz bo'sht`, {
-                chat_id: query.message.chat.id,
-                message_id: query.message.message_id,
-                parse_mode: 'HTML',
-                'reply_markup': {
-                    'inline_keyboard': [
-                        [{
-                            text: "🍲 Taom tanlash",
-                            callback_data: JSON.stringify({
-                                type: 'allrestaurants'
-                            })
-                        }]
-                    ]
-                }
-            })
-
+            
         })
-    }else if (data.type === 'allrestaurants') {
+    } else if(data.type === "empty_busket_back") {
+        axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then((response) => {
+            //console.log(response.data.cart)
+            if(response.data.cart.length > 0) {
+                axios.post(`${api_link}api/user/client/clear-cart`, {
+                    clientId: response.data._id
+                }).then((response) => {
+                    //bot.answerCallbackQuery(query.id, {text: `Savatchangiz bo'sht`})
+                    bot.editMessageText(`✅ Savatchangiz bo'shtatildi`, {
+                        chat_id: query.message.chat.id,
+                        message_id: query.message.message_id,
+                        parse_mode: 'HTML',
+                        'reply_markup': {
+                            'inline_keyboard': [
+                                [{
+                                    text: "◀️ Taomga qaytish",
+                                    callback_data: JSON.stringify({
+                                        type: 'food',
+                                        id: data.foodid
+                                    })
+                                }]
+                            ]
+                        }
+                    })
+                }, (error) => {
+                    console.log(`Xatolik\n`)
+                    //console.log(error.data);
+                });
+            } else {
+                bot.answerCallbackQuery(query.id, {text: `Savatchangiz bo'sht`})
+            }
+            
+        })
+    } else if (data.type === 'allrestaurants') {
         // Show all restaurants
         axios.get(`${api_link}api/restaurant/get`).then(response =>{
             var a = response.data.map((x, xi) => ({
