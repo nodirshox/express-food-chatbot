@@ -605,27 +605,44 @@ function busket(query){
         if(response.data.cart.length > 0) {
             axios.get(`${api_link}api/restaurant/get?id=${response.data.restaurant}`).then(res =>{
                 if(res.data.delivery.enabled == true) {
+
                     var delivery_cost = res.data.delivery.price
-                    var keyboard = [[{
-                        text: `🗑 Savatchani bo'shatish`,
-                        callback_data: JSON.stringify({
-                            type: 'empty_busket'
-                        })
-                    }],
-                    [{
-                        text: '✅ Buyurtma berish',
-                        callback_data: JSON.stringify({
-                            type: 'orderbyuser'
-                        })
-                    }],
-                    [{
-                        text: `"🍲 ${res.data.name}"dan taom tanlash`,
-                        callback_data: JSON.stringify({
-                            type: 'restaurant',
-                            id: res.data._id
-                        })
-                    }]
-                ]
+                    var keyboard = [
+                        [{
+                            text: `🗑 Savatchani bo'shatish`,
+                            callback_data: JSON.stringify({
+                                type: 'empty_busket'
+                            })
+                        }],
+                        [{
+                            text: '✅ Buyurtma berish',
+                            callback_data: JSON.stringify({
+                                type: 'orderbyuser'
+                            })
+                        }],
+                        [{
+                            text: `"🍲 ${res.data.name}"dan taom tanlash`,
+                            callback_data: JSON.stringify({
+                                type: 'restaurant',
+                                id: res.data._id
+                            })
+                        }]
+                    ]
+                    var keyboards = [
+                        [{
+                            text: `🗑 Savatchani bo'shatish`,
+                            callback_data: JSON.stringify({
+                                type: 'empty_busket'
+                            })
+                        }],
+                        [{
+                            text: `"🍲 ${res.data.name}"dan taom tanlash`,
+                            callback_data: JSON.stringify({
+                                type: 'restaurant',
+                                id: res.data._id
+                            })
+                        }]
+                    ]
                     var total = 0;
                     var itemid
                     const html = response.data.cart.map((f, i) => {
@@ -633,15 +650,26 @@ function busket(query){
                         itemid = f.food._id
                         return `${i + 1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
                     }).join('\n')
+                    if(total >= res.data.minimumOrderCost) {
+                        bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()}`, {
+                            chat_id: query.message.chat.id,
+                            message_id: query.message.message_id,
+                            parse_mode: 'HTML',
+                            'reply_markup': {
+                                'inline_keyboard': keyboard
+                            }
+                        })
+                    } else {
+                        bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\n❗️ Ushbu restarantdan minium buyurtma berish narxi: ${res.data.minimumOrderCost.toLocaleString()} so'm. Iltimos yana taom qo'shing`, {
+                            chat_id: query.message.chat.id,
+                            message_id: query.message.message_id,
+                            parse_mode: 'HTML',
+                            'reply_markup': {
+                                'inline_keyboard': keyboards
+                            }
+                        })
+                    }
                     
-                    bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()}`, {
-                        chat_id: query.message.chat.id,
-                        message_id: query.message.message_id,
-                        parse_mode: 'HTML',
-                        'reply_markup': {
-                            'inline_keyboard': keyboard
-                        }
-                    })
                 }
             })
             
