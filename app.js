@@ -94,42 +94,59 @@ bot.on('message', function(msg) {
     }
     if(msg.location) {
         axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(responses =>{
-            var restaurant = responses.data.restaurant
-            var user = responses.data._id;
-            var longlat = msg.location.longitude + '&' + msg.location.latitude
-            var foods = responses.data.cart.map((f) => {
-                var obj = {
-                    food: f.food._id,
-                    count: f.quantity
-                }
-                return obj
-            })
-            var stringFood = JSON.stringify(foods)
-            axios.get(`https://nominatim.openstreetmap.org/reverse.php?lat=${msg.location.latitude}&lon=${msg.location.longitude}&format=json&accept-language=en`).then(response =>{
-                var address = response.data.display_name
-                axios.post(`${api_link}api/order/store`, {
-                    user: user,
-                    longlat: longlat,
-                    foods: stringFood,
-                    restaurant: restaurant,
-                    comment: "-",
-                    status: 1,
-                    address: address
-                }).then((response) => {
-                    //console.log(response.data)
-                    var total = 0;
-                    const html = responses.data.cart.map((f, i) => {
-                        total += f.quantity * f.food.price;
-                        return `${i +1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
-                    }).join('\n')
-                    bot.sendMessage(chatId, `✅ Buyurtma qa'bul qilindi.\n${html}\n<b>UMUMIY:</b> ${total.toLocaleString()} so'm\n<b>Manzil:</b> ${address}`, {
-                        parse_mode: 'HTML'
-                    })
-                    botMenu(chatId)
-                }, (error) => {
-                console.log(error);
-                });
-            })
+            if(responses) {
+                axios.get(`${api_link}api/restaurant/get?id=${responses.data.restaurant}`).then(res =>{
+                    if(res) {
+                        var restaurant = responses.data.restaurant
+                        var user = responses.data._id;
+                        var longlat = msg.location.longitude + '&' + msg.location.latitude
+                        var foods = responses.data.cart.map((f) => {
+                            var obj = {
+                                food: f.food._id,
+                                count: f.quantity
+                            }
+                            return obj
+                        })
+                        var stringFood = JSON.stringify(foods)
+                        axios.get(`https://nominatim.openstreetmap.org/reverse.php?lat=${msg.location.latitude}&lon=${msg.location.longitude}&format=json&accept-language=en`).then(response =>{
+                            var address = response.data.display_name
+                            axios.post(`${api_link}api/order/store`, {
+                                user: user,
+                                longlat: longlat,
+                                foods: stringFood,
+                                restaurant: restaurant,
+                                comment: "-",
+                                status: 1,
+                                address: address
+                            }).then((response) => {
+
+                                axios.post(`${api_link}api/user/client/clear-cart`, {
+                                    clientId: user
+                                }).then((nodirresponse) => {
+                                //console.log(response.data)
+                                var total = 0;
+                                const html = responses.data.cart.map((f, i) => {
+                                    total += f.quantity * f.food.price;
+                                    return `${i +1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
+                                }).join('\n')
+                                bot.sendMessage(chatId, `✅ Buyurtma qa'bul qilindi.\n${html}\nTaomlar narxi:${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm\n<b>Manzil:</b> ${address}`, {
+                                    parse_mode: 'HTML'
+                                })
+                                botMenu(chatId)
+                                }, (error) => {
+                                    console.log(`Xatolik`)
+                                });
+
+                            }, (error) => {
+                            console.log(error);
+                            });
+                        })
+                    }
+                    console.log()
+
+                })
+            }
+            
             
             
 
@@ -141,7 +158,9 @@ bot.on('message', function(msg) {
 
 
 bot.on("callback_query", function(query) {
-    data = JSON.parse(query.data)
+    //chech if user has telegramid
+    axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then(nodirresponses =>{
+        data = JSON.parse(query.data)
     // Show one restaurant and categories
     if(data.type === 'restaurant') { 
         axios.get(`${api_link}api/restaurant/get`).then(response =>{
@@ -546,6 +565,26 @@ bot.on("callback_query", function(query) {
     } else if(data.type === 'foodinfo'){
         bot.answerCallbackQuery(query.id, {text: data.id.toLocaleString() + " so'm"})
     }
+    }).catch(err =>{
+        var hellomsg = `<b>Xush kelibsiz!</b>\nBuyurtma berish telefon raqamingizni yuboring.`
+        bot.editMessageText(hellomsg, {
+            chat_id: query.message.chat.id,
+            message_id: query.message.message_id,
+            'parse_mode': 'HTML'
+        })
+        bot.sendMessage(query.from.id, "Telefon raqamingizni yuboring", {
+            chat_id: query.message.chat.id,
+            message_id: query.message.message_id,
+            'parse_mode': 'HTML',
+            'reply_markup': {
+                resize_keyboard: true,
+                "keyboard": [[{
+                        text: "Yuborish",
+                        request_contact: true
+                }]]
+            }})
+    })
+    
 })
 
 // 
@@ -601,7 +640,7 @@ function restaurant(chatId) {
 
 function busket(query){
     axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then(response =>{
-
+        //console.log(response.data.cart)
         if(response.data.cart.length > 0) {
             axios.get(`${api_link}api/restaurant/get?id=${response.data.restaurant}`).then(res =>{
                 if(res.data.delivery.enabled == true) {
@@ -651,7 +690,7 @@ function busket(query){
                         return `${i + 1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
                     }).join('\n')
                     if(total >= res.data.minimumOrderCost) {
-                        bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()}`, {
+                        bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()} so'm`, {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -692,6 +731,6 @@ function busket(query){
         })
     }
     }).catch(err =>{
-
+        //console.log(err)
     })
 }
