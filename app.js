@@ -73,7 +73,7 @@ bot.on('message', function(msg) {
                     name: msg.contact.first_name,
                     telegramId: chatId
                 }).then((response) => {
-                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
+                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdingiz.`)
                     botMenu(chatId)
                 }, (error) => {
                 console.log(error);
@@ -173,7 +173,7 @@ bot.on("callback_query", function(query) {
                     } else {
                         status = '❌ Vaqtincha ishlamayapti'
                     }
-                    var html = `<b>${obj.name}</b>\n☎️ ${obj.phone}\n🕔 ${obj.workingHours}\n<b>Minium buyurtma narxi:</b> ${obj.minimumOrderCost.toLocaleString()} so'm\n<b>Yetkazib berish:</b> ${obj.delivery.price.toLocaleString()} so'm\n<b>Yetkazib berish vaqti:</b> ${obj.delivery.time}\n<b>Yetkazib berish holati:</b> ${status} <a href="${obj.image.url}">&#8205;</a>`
+                    var html = `<b>${obj.name}</b>\nYetkazib berish vaqti: ${obj.delivery.time}\nYetkazib berish: ${obj.delivery.price.toLocaleString()} so'm\nMinium buyurtma narxi: ${obj.minimumOrderCost.toLocaleString()} so'm\n☎️ ${obj.phone} | 🕔 ${obj.workingHours}\n<b>Ish holati:</b> ${status}<a href="${obj.image.url}">&#8205;</a>`
                     var chat_id = query.message.chat.id;
                     var message_id = query.message.message_id;
                     var a = obj.categories.map((x, xi) => ({
@@ -196,12 +196,18 @@ bot.on("callback_query", function(query) {
                         return r;
                     }(a);
                     var back = [{
-                        text: "⏪ Ortga",
+                        text: "🍲 Restorantlar",
                         callback_data: JSON.stringify({
                             type: 'allrestaurants'
                           })
+                    }, {
+                        text: "🛒 Savatcha",
+                        callback_data: JSON.stringify({
+                            type: 'busket'
+                          })
                     }]
                     keyboard.push(back)
+                    
                     bot.editMessageText(html, {
                         chat_id: chat_id,
                         message_id: message_id,
@@ -272,9 +278,14 @@ bot.on("callback_query", function(query) {
         // Show food
         axios.get(`${api_link}api/food/get?id=${data.id}`).then(response =>{
                     var obj = response.data;
-                    var html = `<b>Nomi:</b> ${obj.name}\n<b>Narxi:</b> ${obj.price.toLocaleString()} so'm\n<b>Qo'shimcha:</b> ${obj.description}\n<b>Taom tarkibi:</b> ${obj.ingredients}\n<a href="${obj.image.url}">&#8205;</a>`
+                    if(obj.ingredients != null) {
+                        ingredients = `\nTarkibi: ${obj.ingredients}`
+                    } else {
+                        ingredients = ""
+                    }
+                    var html = `<b>${obj.name}</b>\nIzoh: ${obj.description}${ingredients}\n<b>Narxi:</b> ${obj.price.toLocaleString()} so'm<a href="${obj.image.url}">&#8205;</a>`
                     if(obj.stock > 0 || obj.stock === null) {
-                        bot.editMessageText(html + '👇 Taom sonini tanlang: <u>DONA</u> / <u>KG</u> 👇', {
+                        bot.editMessageText(html + '\n👇 Taom sonini tanlang: <u>DONA</u> / <u>KG</u>', {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -289,29 +300,24 @@ bot.on("callback_query", function(query) {
                                         },
                                         {
                                             text: "3",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 3 })
+                                        },
+                                        {
+                                            text: "4",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 4 })
                                         }
                                     ],
                                     [
-                                        {
-                                            text: "4",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 4 })
-                                        },
                                         {
                                             text: "5",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 5 })
                                         },
                                         {
                                             text: "6",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 6 })
-                                        } 
-                                    ],
-                                    [
+                                        },
                                         {
                                             text: "7",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 7 })
                                         },
                                         {
                                             text: "8",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 8 })
-                                        },
-                                        {
-                                            text: "9",callback_data: JSON.stringify({ type: 'add', id: obj._id, quantity: 9 })
-                                        } 
+                                        }
                                     ],
                                     [
                                         {
@@ -322,7 +328,7 @@ bot.on("callback_query", function(query) {
                             }
                         })
                     } else {
-                        bot.editMessageText(html + "❗️ Ushbu taomni hozirda buyurtma qilib bo'lmaydi. ", {
+                        bot.editMessageText(html + "\n❗️ Ushbu taomni hozirda buyurtma qilib bo'lmaydi. ", {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -365,7 +371,7 @@ bot.on("callback_query", function(query) {
                     quantity: data.quantity + initial_qunatity
                 }).then((response) => {
                     if(response.data.result == 'error') {
-                        bot.editMessageText(`❗️ Boshqa restorant taomini qo'shmoqchisiz. Iltimos, bitta restarantda buyurtma qiling! Agar ushbu restorantdan buyurtma qilmoqchi bo'lsangiz, savatchangizni tozalang`, {
+                        bot.editMessageText(`❗️ Boshqa restorant taomini qo'shmoqchisiz.\nIltimos, bitta restarantda buyurtma qiling!\nAgar ushbu restorantdan buyurtma qilmoqchi bo'lsangiz, savatchangizni tozalang.`, {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -400,7 +406,7 @@ bot.on("callback_query", function(query) {
                             var restorantid = response.data.restaurant
                             var obj = response.data;
                             bot.answerCallbackQuery(query.id, {text: `Savatchaga qo'shildi`, show_alert: true})
-                            var html = `✅ Savatchaga ${obj.name} qo'shildi`        
+                            var html = `✅ Savatchaga qo'shildi: <b>${obj.name}</b>\n${obj.price.toLocaleString()} x ${data.quantity} = ${(obj.price * data.quantity).toLocaleString()} so'm`        
                             bot.editMessageText(html, {
                                 chat_id: query.message.chat.id,
                                 message_id: query.message.message_id,
@@ -567,9 +573,7 @@ bot.on("callback_query", function(query) {
     }
     }).catch(err =>{
         var hellomsg = `<b>Xush kelibsiz!</b>\nBuyurtma berish telefon raqamingizni yuboring.`
-        bot.editMessageText(hellomsg, {
-            chat_id: query.message.chat.id,
-            message_id: query.message.message_id,
+        bot.sendMessage(query.from.id, hellomsg, {
             'parse_mode': 'HTML'
         })
         bot.sendMessage(query.from.id, "Telefon raqamingizni yuboring", {
@@ -600,7 +604,7 @@ function botMenu(chatId) {
 
 // When user pressed our restaurants
 function restaurant(chatId) {
-    bot.sendMessage(chatId, `Bizda mavjud restoranlar ro'yhati yuborilmoqda`);
+    //bot.sendMessage(chatId, `Bizda mavjud restoranlar ro'yhati yuborilmoqda`);
     axios.get(`${api_link}api/restaurant/get`).then(response =>{
         var a = response.data.map((x, xi) => ({
             text: `${xi + 1}. ${x.name}`,
@@ -654,7 +658,7 @@ function busket(query){
                             })
                         }],
                         [{
-                            text: '✅ Buyurtma berish',
+                            text: '🚖 Buyurtma berish',
                             callback_data: JSON.stringify({
                                 type: 'orderbyuser'
                             })
@@ -687,10 +691,10 @@ function busket(query){
                     const html = response.data.cart.map((f, i) => {
                         total += f.quantity * f.food.price;
                         itemid = f.food._id
-                        return `${i + 1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
+                        return `${i + 1}. ${f.food.name} ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
                     }).join('\n')
                     if(total >= res.data.minimumOrderCost) {
-                        bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()} so'm`, {
+                        bot.editMessageText(`Savatchada: <b>${res.data.name}</b>\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()} so'm`, {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -699,7 +703,7 @@ function busket(query){
                             }
                         })
                     } else {
-                        bot.editMessageText(`Savatchada:\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\n❗️ Ushbu restarantdan minium buyurtma berish narxi: ${res.data.minimumOrderCost.toLocaleString()} so'm. Iltimos yana taom qo'shing`, {
+                        bot.editMessageText(`Savatchada: <b>${res.data.name}</b>\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\n❗️ Ushbu restarantdan minium buyurtma berish narxi: ${res.data.minimumOrderCost.toLocaleString()} so'm. Iltimos yana taom qo'shing`, {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
@@ -709,6 +713,23 @@ function busket(query){
                         })
                     }
                     
+                } else {
+                    //if restaurant not working
+                    bot.editMessageText(`Restaurant ish faoliyatida emas`, {
+                        chat_id: query.message.chat.id,
+                        message_id: query.message.message_id,
+                        parse_mode: 'HTML',
+                        'reply_markup': {
+                            'inline_keyboard': [
+                                [{
+                                    text: "🍲 Taom tanlash",
+                                    callback_data: JSON.stringify({
+                                        type: 'allrestaurants'
+                                    })
+                                }]
+                            ]
+                        }
+                    })
                 }
             })
             
