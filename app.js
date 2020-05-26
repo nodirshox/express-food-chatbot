@@ -163,10 +163,9 @@ bot.on("callback_query", function(query) {
         data = JSON.parse(query.data)
     // Show one restaurant and categories
     if(data.type === 'restaurant') { 
-        axios.get(`${api_link}api/restaurant/get`).then(response =>{
-            for(var i=0; i < response.data.length; i++) {
-                if(data.id === response.data[i]._id) {
-                    var obj = response.data[i];
+        console.log(data.id)
+        axios.get(`${api_link}api/restaurant/get?id=${data.id}`).then(response =>{
+                    var obj = response.data;
                     var status;
                     if(obj.delivery.enabled) {
                         status = '✅ Ishlamoqda'
@@ -216,9 +215,8 @@ bot.on("callback_query", function(query) {
                             inline_keyboard: keyboard
                         }
                     })
-                    break;
-                }
-            }
+
+            
         }).catch(err =>{
             console.log(err);
         })
