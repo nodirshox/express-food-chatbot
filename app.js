@@ -82,40 +82,36 @@ bot.on('message', function(msg) {
         }).catch(err =>{
             console.log(err)
         })
-    }
-    // End of registration
+    } else if(msg.location) {
 
-    // List of restaurants
-    if(msg.text === 'Bizning menu') {
+    } else if(msg.text === 'Bizning menu') {
         restaurant(chatId)
     } else if(msg.text === '◀️ Ortga') {
         botMenu(chatId)
-    } else {
-        if(msg.location) {
+    } else if(msg.text) {
+        if(msg.text != '/start') {
+            axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(nodirresponses =>{
+                if(nodirresponses.data.cart > 0) {
+                    bot.sendMessage(chatId, "<b>Tasdiqlaysizmi?:</b>\n" + msg.text, {
+                        parse_mode: "HTML",
+                        reply_markup: {
+                            inline_keyboard: [[{
+                                text: "Davom etish",
+                                callback_data: JSON.stringify({
+                                    type: 'orderbyuser',
+                                    cm : msg.text
+                                  })
+                            }]]
+                        }
+                    })
+                }
+            })
 
-        } else {
-            if(msg.text != '/start' && msg.contact == null) {
-                axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(nodirresponses =>{
-                    if(nodirresponses.data.cart > 0) {
-                        bot.sendMessage(chatId, "<b>Tasdiqlaysizmi?:</b>\n" + msg.text, {
-                            parse_mode: "HTML",
-                            reply_markup: {
-                                inline_keyboard: [[{
-                                    text: "Davom etish",
-                                    callback_data: JSON.stringify({
-                                        type: 'orderbyuser',
-                                        cm : msg.text
-                                      })
-                                }]]
-                            }
-                        })
-                    }
-                })
-
-            }
         }
-
+    } else {
+        botMenu(chatId)
     }
+
 
 
 })
