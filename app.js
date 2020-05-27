@@ -88,69 +88,33 @@ bot.on('message', function(msg) {
     // List of restaurants
     if(msg.text === 'Bizning menu') {
         restaurant(chatId)
-    }
-    if(msg.text === '◀️ Ortga') {
+    } else if(msg.text === '◀️ Ortga') {
         botMenu(chatId)
-    }
-    if(msg.location) {
-        axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(responses =>{
-            if(responses) {
-                axios.get(`${api_link}api/restaurant/get?id=${responses.data.restaurant}`).then(res =>{
-                    if(res) {
-                        var restaurant = responses.data.restaurant
-                        var user = responses.data._id;
-                        var longlat = msg.location.longitude + '&' + msg.location.latitude
-                        var foods = responses.data.cart.map((f) => {
-                            var obj = {
-                                food: f.food._id,
-                                count: f.quantity
+    } else {
+        if(msg.location) {
+
+        } else {
+            if(msg.text != '/start' && msg.contact == null) {
+                axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(nodirresponses =>{
+                    if(nodirresponses.data.cart > 0) {
+                        bot.sendMessage(chatId, "<b>Tasdiqlaysizmi?:</b>\n" + msg.text, {
+                            parse_mode: "HTML",
+                            reply_markup: {
+                                inline_keyboard: [[{
+                                    text: "Davom etish",
+                                    callback_data: JSON.stringify({
+                                        type: 'orderbyuser',
+                                        cm : msg.text
+                                      })
+                                }]]
                             }
-                            return obj
-                        })
-                        var stringFood = JSON.stringify(foods)
-                        axios.get(`https://nominatim.openstreetmap.org/reverse.php?lat=${msg.location.latitude}&lon=${msg.location.longitude}&format=json&accept-language=en`).then(response =>{
-                            var address = response.data.display_name
-                            axios.post(`${api_link}api/order/store`, {
-                                user: user,
-                                longlat: longlat,
-                                foods: stringFood,
-                                restaurant: restaurant,
-                                comment: "-",
-                                status: 1,
-                                address: address
-                            }).then((response) => {
-
-                                axios.post(`${api_link}api/user/client/clear-cart`, {
-                                    clientId: user
-                                }).then((nodirresponse) => {
-                                //console.log(response.data)
-                                var total = 0;
-                                const html = responses.data.cart.map((f, i) => {
-                                    total += f.quantity * f.food.price;
-                                    return `${i +1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
-                                }).join('\n')
-                                bot.sendMessage(chatId, `✅ Buyurtma qa'bul qilindi.\n${html}\nTaomlar narxi:${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm\n<b>Manzil:</b> ${address}`, {
-                                    parse_mode: 'HTML'
-                                })
-                                botMenu(chatId)
-                                }, (error) => {
-                                    console.log(`Xatolik`)
-                                });
-
-                            }, (error) => {
-                            console.log(error);
-                            });
                         })
                     }
-                    console.log()
-
                 })
-            }
-            
-            
-            
 
-        })
+            }
+        }
+
     }
 
 
@@ -162,8 +126,7 @@ bot.on("callback_query", function(query) {
     axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then(nodirresponses =>{
         data = JSON.parse(query.data)
     // Show one restaurant and categories
-    if(data.type === 'restaurant') { 
-        console.log(data.id)
+    if(data.type === 'restaurant') {
         axios.get(`${api_link}api/restaurant/get?id=${data.id}`).then(response =>{
                     var obj = response.data;
                     var status;
@@ -563,11 +526,114 @@ bot.on("callback_query", function(query) {
                 ]
             }
         })
-
+        bot.on('message', (msgs) => {
+            if(msgs.location) {
+                axios.get(`${api_link}api/user/client/get?telegramId=${query.from.id}`).then(responses =>{
+                    if(responses) {
+                        if(responses.data.cart.length > 0) {
+                            axios.get(`${api_link}api/restaurant/get?id=${responses.data.restaurant}`).then(res =>{
+                                if(res) {
+                                    var restaurant = responses.data.restaurant
+                                    var user = responses.data._id;
+                                    var longlat = msgs.location.longitude + '&' + msgs.location.latitude
+                                    var foods = responses.data.cart.map((f) => {
+                                        var obj = {
+                                            food: f.food._id,
+                                            count: f.quantity
+                                        }
+                                        return obj
+                                    })
+                                    var stringFood = JSON.stringify(foods)
+                                    axios.get(`https://nominatim.openstreetmap.org/reverse.php?lat=${msgs.location.latitude}&lon=${msgs.location.longitude}&format=json&accept-language=en`).then(response =>{
+                                        var address = response.data.display_name
+                                        mycomment = '-'
+                                        if(data.cm) {
+                                            mycomment = data.cm
+                                        }
+                                        axios.post(`${api_link}api/order/store`, {
+                                            user: user,
+                                            longlat: longlat,
+                                            foods: stringFood,
+                                            restaurant: restaurant,
+                                            comment: mycomment,
+                                            status: 1,
+                                            address: address
+                                        }).then((response) => {
+            
+                                            axios.post(`${api_link}api/user/client/clear-cart`, {
+                                                clientId: user
+                                            }).then((nodirresponse) => {
+                                            //console.log(response.data)
+                                            var total = 0;
+                                            const html = responses.data.cart.map((f, i) => {
+                                                total += f.quantity * f.food.price;
+                                                return `${i +1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
+                                            }).join('\n')
+                                            bot.sendMessage(query.from.id, `✅ Buyurtma qa'bul qilindi.\n${html}\nTaomlar narxi:${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm\n<b>Manzil:</b> ${address}\nIzoh: ${mycomment}`, {
+                                                parse_mode: 'HTML'
+                                            })
+                                            botMenu(query.from.id)
+                                            }, (error) => {
+                                                console.log(`Xatolik`)
+                                            });
+            
+                                        }, (error) => {
+                                            console.log(error);
+                                        });
+                                    })
+                                }            
+                            })
+                        } else {
+                            bot.sendMessage(query.from.id, `Savatchangiz bo'sht`, {
+                                parse_mode: 'HTML'
+                            })
+                        }
+        
+                    }
+                    
+                    
+                    
+        
+                })
+            }
+        })
     } else if(data.type === 'busket') {
         busket(query)
     } else if(data.type === 'foodinfo'){
         bot.answerCallbackQuery(query.id, {text: data.id.toLocaleString() + " so'm"})
+    } else if(data.type === 'add_comment') {
+        bot.editMessageText("Qo'shimcha izoh kiritasizmi?", {
+            chat_id: query.message.chat.id,
+            message_id: query.message.message_id,
+            'reply_markup': {
+                'inline_keyboard': [
+                    [{
+                        text: "➡️ Izohsiz",
+                        callback_data: JSON.stringify({
+                            type: 'orderbyuser'
+                        })
+                    }],
+                    [{
+                        text: "✍️ Izoh qo'shish",
+                        callback_data: JSON.stringify({
+                            type: 'make_comment'
+                        })
+                    }]
+                ]
+            }
+        })
+    } else if(data.type === 'make_comment'){
+        bot.editMessageText("Izohingizni yozing", {
+            chat_id: query.message.chat.id,
+            message_id: query.message.message_id,
+        })
+        bot.sendMessage(query.from.id, '✍️ ✍️ ✍️', {
+            reply_markup: {
+                remove_keyboard: true
+            }
+        })
+    }else {
+        bot.answerCallbackQuery(query.id, {text: "Xatolik"})
     }
     }).catch(err =>{
         var hellomsg = `<b>Xush kelibsiz!</b>\nBuyurtma berish telefon raqamingizni yuboring.`
@@ -658,7 +724,7 @@ function busket(query){
                         [{
                             text: '🚖 Buyurtma berish',
                             callback_data: JSON.stringify({
-                                type: 'orderbyuser'
+                                type: 'add_comment'
                             })
                         }],
                         [{
