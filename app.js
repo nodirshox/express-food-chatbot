@@ -11,7 +11,6 @@ const bot = new TelegramBot(token, {webHook: {
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
 
-
 //const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
 
 
@@ -132,7 +131,7 @@ bot.on('message', function(msg) {
                                         } else {
                                             mycomment = '\n<b>Izoh:</b> ' + nodirresponses.data.comment + '\n'
                                         }
-                                        bot.sendMessage(chatId, `Buyurtma\n<b>Manzil:</b> ${msg.text}\n<b>Telefon:</b> ${nodirresponses.data.phone} ${mycomment}---------\n${html}\n---------\nTaomlar narxi:${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm`, {
+                                        bot.sendMessage(chatId, `Buyurtma\n<b>Manzil:</b> ${msg.text}\n<b>Telefon:</b> ${nodirresponses.data.phone} ${mycomment}---------\n${html}\n---------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm`, {
                                             parse_mode: 'HTML',
                                             'reply_markup': {
                                                 'inline_keyboard': [
@@ -422,7 +421,7 @@ bot.on("callback_query", function(query) {
                         axios.get(`${api_link}api/food/get?id=${data.id}`).then(response =>{
                             var restorantid = response.data.restaurant
                             var obj = response.data;
-                            bot.answerCallbackQuery(query.id, {text: `Savatchaga qo'shildi`, show_alert: true})
+                            bot.answerCallbackQuery(query.id, {text: `✅ Savatchaga qo'shildi`, show_alert: true})
                             var html = `✅ Savatchaga qo'shildi: <b>${obj.name}</b>\n${obj.price.toLocaleString()} x ${data.quantity} = ${(obj.price * data.quantity).toLocaleString()} so'm`        
                             bot.editMessageText(html, {
                                 chat_id: query.message.chat.id,
@@ -431,16 +430,16 @@ bot.on("callback_query", function(query) {
                                 'reply_markup': {
                                     'inline_keyboard': [
                                         [{
-                                            text: "⏪ Restorantga qaytish",
-                                            callback_data: JSON.stringify({
-                                                type: 'restaurant',
-                                                id: restorantid
-                                            })
-                                        }],
-                                        [{
                                             text: "🛒 Savatchani ko'rish",
                                             callback_data: JSON.stringify({
                                                 type: 'busket'
+                                            })
+                                        }],
+                                        [{
+                                            text: "⏪ Taom tanlashga qaytish",
+                                            callback_data: JSON.stringify({
+                                                type: 'restaurant',
+                                                id: restorantid
                                             })
                                         }]
                                     ]
@@ -698,7 +697,7 @@ bot.on("callback_query", function(query) {
                                         total += f.quantity * f.food.price;
                                         return `${i +1}. ${f.food.name} - ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
                                     }).join('\n')
-                                    bot.editMessageText(`✅ Buyurtma qa'bul qilindi 🥳.\n<b>Manzil:</b> ${responses.data.comment.slice(data.length + 1)}\nIzoh: ${responses.data.comment.slice(0, data.length)}\n--------\n${html}\n--------\nTaomlar narxi:${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm`, {
+                                    bot.editMessageText(`✅ Buyurtma qa'bul qilindi 🥳.\n<b>Manzil:</b> ${responses.data.comment.slice(data.length + 1)}\nIzoh: ${responses.data.comment.slice(0, data.length)}\n--------\n${html}\n--------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish narxi: ${res.data.delivery.price.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + res.data.delivery.price).toLocaleString()} so'm`, {
                                         chat_id: query.message.chat.id,
                                         message_id: query.message.message_id,
                                         parse_mode: 'HTML'
