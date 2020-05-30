@@ -16,9 +16,17 @@ bot.setWebHook(`${url}/bot${token}`);
 
 bot.on("polling_error", (err) => console.log(err));
 
+const word = {
+    uz: {
+        menu: "🍲 Taomlar",
+        help: "🔖 Yordam",
+        basket: "🛒 Savatcha"
+    }
+}
+
 const menu = [
-    ["Bizning menu"],
-    ["Yordam", "Sozlamalar"] 
+    [word.uz.menu],
+    [word.uz.basket, word.uz.help] 
 ]
 
 // Starting point and request phone number
@@ -31,7 +39,7 @@ bot.onText(/\/start/, function(msg) {
         'reply_markup': {
             resize_keyboard: true,
             "keyboard": [[{
-                    text: "Yuborish",
+                    text: "📞 Yuborish",
                     request_contact: true
             }]]
         }
@@ -85,8 +93,14 @@ bot.on('message', function(msg) {
     // End of registration
 
     // List of restaurants
-    if(msg.text === 'Bizning menu') {
+    if(msg.text === word.uz.menu) {
         restaurant(chatId)
+    } else if(msg.text === word.uz.basket){
+        basket_keyboard(chatId)
+    } else if(msg.text === word.uz.help) {
+        bot.sendMessage(chatId, "Taklif va shikoyatlar uchun:\n📞 +998 91 6266468", {
+            parse_mode: "HTML"
+        })
     } else if(msg.text === '◀️ Ortga') {
         botMenu(chatId)
     } else {
@@ -160,8 +174,6 @@ bot.on('message', function(msg) {
                                 
                             })
 
-                        }else {
-                            botMenu(chatId)
                         }
                     }
                     
@@ -737,7 +749,7 @@ bot.on("callback_query", function(query) {
             'reply_markup': {
                 resize_keyboard: true,
                 "keyboard": [[{
-                        text: "Yuborish",
+                        text: "📞 Yuborish",
                         request_contact: true
                 }]]
         }})
@@ -892,6 +904,111 @@ function busket(query){
         bot.editMessageText(`😌 Savatchangiz bo'sht`, {
             chat_id: query.message.chat.id,
             message_id: query.message.message_id,
+            parse_mode: 'HTML',
+            'reply_markup': {
+                'inline_keyboard': [
+                    [{
+                        text: "🍲 Taom tanlash",
+                        callback_data: JSON.stringify({
+                            type: 'allrestaurants'
+                        })
+                    }]
+                ]
+            }
+        })
+    }
+    }).catch(err =>{
+        //console.log(err)
+    })
+}
+
+function basket_keyboard(chatId) {
+    axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(response =>{
+        //console.log(response.data.cart)
+        if(response.data.cart.length > 0) {
+            axios.get(`${api_link}api/restaurant/get?id=${response.data.restaurant}`).then(res =>{
+                if(res.data.delivery.enabled == true) {
+                    var delivery_cost = res.data.delivery.price
+                    var keyboard = [
+                        [{
+                            text: '🚖 Buyurtma berish',
+                            callback_data: JSON.stringify({
+                                type: 'add_comment'
+                            })
+                        }],
+                        [{
+                            text: `🗑 Savatchani bo'shatish`,
+                            callback_data: JSON.stringify({
+                                type: 'empty_busket'
+                            })
+                        }],
+                        [{
+                            text: `"🍲 ${res.data.name}"dan taom tanlash`,
+                            callback_data: JSON.stringify({
+                                type: 'restaurant',
+                                id: res.data._id
+                            })
+                        }]
+                    ]
+                    var keyboards = [
+                        [{
+                            text: `🗑 Savatchani bo'shatish`,
+                            callback_data: JSON.stringify({
+                                type: 'empty_busket'
+                            })
+                        }],
+                        [{
+                            text: `"🍲 ${res.data.name}"dan taom tanlash`,
+                            callback_data: JSON.stringify({
+                                type: 'restaurant',
+                                id: res.data._id
+                            })
+                        }]
+                    ]
+                    var total = 0;
+                    var itemid
+                    const html = response.data.cart.map((f, i) => {
+                        total += f.quantity * f.food.price;
+                        itemid = f.food._id
+                        return `${i + 1}. ${f.food.name} ${f.quantity} x ${f.food.price.toLocaleString()} = ${(f.quantity * f.food.price).toLocaleString()} so'm`
+                    }).join('\n')
+                    if(total >= res.data.minimumOrderCost) {
+                        bot.sendMessage(chatId, `Savatchada: <b>${res.data.name}</b>\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\nYetkazib berish: ${delivery_cost.toLocaleString()} so'm\n<b>UMUMIY:</b> ${(total + delivery_cost).toLocaleString()} so'm`, {
+                            parse_mode: 'HTML',
+                            'reply_markup': {
+                                'inline_keyboard': keyboard
+                            }
+                        })
+                    } else {
+                        bot.sendMessage(chatId, `Savatchada: <b>${res.data.name}</b>\n---------------\n${html}\n---------------\nTaomlar narxi: ${total.toLocaleString()} so'm\n❗️ Ushbu restarantdan minium buyurtma berish narxi: ${res.data.minimumOrderCost.toLocaleString()} so'm. Iltimos yana taom qo'shing`, {
+                            parse_mode: 'HTML',
+                            'reply_markup': {
+                                'inline_keyboard': keyboards
+                            }
+                        })
+                    }
+                    
+                } else {
+                    //if restaurant not working
+                    bot.sendMessage(chatId, `Restaurant ish faoliyatida emas`, {
+                        parse_mode: 'HTML',
+                        'reply_markup': {
+                            'inline_keyboard': [
+                                [{
+                                    text: "🍲 Taom tanlash",
+                                    callback_data: JSON.stringify({
+                                        type: 'allrestaurants'
+                                    })
+                                }]
+                            ]
+                        }
+                    })
+                }
+            })
+            
+    } else {
+        // Busket is empty
+        bot.sendMessage(chatId,`😌 Savatchangiz bo'sht`, {
             parse_mode: 'HTML',
             'reply_markup': {
                 'inline_keyboard': [
