@@ -11,6 +11,7 @@ const bot = new TelegramBot(token, {webHook: {
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
 
+
 //const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
 
 
@@ -20,7 +21,8 @@ const word = {
     uz: {
         menu: "🍲 Taomlar",
         help: "🔖 Yordam",
-        basket: "🛒 Savatcha"
+        basket: "🛒 Savatcha",
+        back: "◀️ Ortga"
     }
 }
 
@@ -101,8 +103,22 @@ bot.on('message', function(msg) {
         bot.sendMessage(chatId, "Taklif va shikoyatlar uchun:\n📞 +998 91 6266468", {
             parse_mode: "HTML"
         })
-    } else if(msg.text === '◀️ Ortga') {
-        botMenu(chatId)
+    } else if(msg.text === word.uz.back) {
+        axios.get(`${api_link}api/user/client/get?telegramId=${chatId}`).then(responses =>{
+            if(responses) {
+                axios.post(`${api_link}api/user/client/store`, {
+                    id: responses.data._id,
+                    confirm: 0,
+                    comment: "-"
+                }).then((response) => {
+                    if(response) {
+                        botMenu(chatId)
+                    }
+                }, (error) => {
+                console.log(error);
+                });
+            }
+        })
     } else {
         if(msg.text) {
             if(msg.text != '/start') {
@@ -120,7 +136,12 @@ bot.on('message', function(msg) {
                                 })
                                 bot.sendMessage(chatId, '👇 👇 👇', {
                                     reply_markup: {
-                                        remove_keyboard: true
+                                        reply_markup: {
+                                            resize_keyboard: true,
+                                            "keyboard": [[{
+                                                text: word.uz.back
+                                            }]]
+                                        }
                                     }
                                 })
                             }, (error) => {
@@ -129,7 +150,7 @@ bot.on('message', function(msg) {
                         } else if(nodirresponses.data.cart.length > 0 && nodirresponses.data.confirm === 2) {
                             var total = 0;
                             axios.get(`${api_link}api/restaurant/get?id=${nodirresponses.data.restaurant}`).then(res =>{
-                                console.log(nodirresponses.data.comment.length)
+                                
                                 axios.post(`${api_link}api/user/client/store`, {
                                     id: nodirresponses.data._id,
                                     confirm: 0,
@@ -590,7 +611,10 @@ bot.on("callback_query", function(query) {
                     })
                     bot.sendMessage(query.from.id, '👇 👇 👇', {
                         reply_markup: {
-                            remove_keyboard: true
+                            resize_keyboard: true,
+                            "keyboard": [[{
+                                text: word.uz.back
+                            }]]
                         }
                     })
                 }, (error) => {
@@ -644,7 +668,10 @@ bot.on("callback_query", function(query) {
                     })
                     bot.sendMessage(query.from.id, '✍️ ✍️ ✍️', {
                         reply_markup: {
-                            remove_keyboard: true
+                            resize_keyboard: true,
+                            "keyboard": [[{
+                                text: word.uz.back
+                            }]]
                         }
                     })
                 }, (error) => {
