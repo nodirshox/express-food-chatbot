@@ -35,7 +35,7 @@ const menu = [
 bot.onText(/\/start/, function(msg) {
     var chatId = msg.chat.id
     var hellomsg = `<b>Xush kelibsiz!</b>\nBuyurtma berish telefon raqamingizni yuboring.`
-    bot.sendPhoto(chatId, 'https://nodir.educationhost.cloud/tgbotimages/delivery.jpg', {
+    bot.sendPhoto(chatId, 'https://files.nodirbek.uz/obke.jpg', {
         'caption': hellomsg,
         'parse_mode': 'HTML',
         'reply_markup': {
