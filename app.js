@@ -103,7 +103,8 @@ bot.on('message', function(msg) {
                 axios.post(`${api_link}api/user/client/store`, {
                     name: msg.contact.first_name,
                     phone: msg.contact.phone_number,
-                    telegramId: chatId
+                    telegramId: chatId,
+                    surname: ""
                 }).then((response) => {
                     bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
                     botMenu(chatId)
@@ -114,7 +115,8 @@ bot.on('message', function(msg) {
                 console.log('old user')
                 axios.post(`${api_link}api/user/client/store`, {
                     name: msg.contact.first_name,
-                    telegramId: chatId
+                    telegramId: chatId,
+                    surname: ""
                 }).then((response) => {
                     bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdingiz.`)
                     botMenu(chatId)
