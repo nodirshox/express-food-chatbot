@@ -5,12 +5,46 @@ const token = process.env.TOKEN; // Token of channel by @botfather
 const api_link = process.env.API;
 
 
+const TOKEN = process.env.TOKEN;
+const url = 'https://express-chatbot.herokuapp.com';
+const port = process.env.PORT;
+
+const express = require('express');
+
+// No need to pass any parameters as we will handle the updates with Express
+const bot = new TelegramBot(TOKEN);
+
+// This informs the Telegram servers of the new webhook.
+bot.setWebHook(`${url}/bot${TOKEN}`);
+
+const app = express();
+
+// parse the updates to JSON
+app.use(express.json());
+
+// We are receiving updates at the route below!
+app.post(`/bot${TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+app.get('/', (req, res) => {
+    res.send("Server running")
+})
+
+// Start Express Server
+app.listen(port, () => {
+  console.log(`Express server is listening on ${port}`);
+});
+
+
+/*
 const url = process.env.APP_URL || 'https://express-chatbot.herokuapp.com:443';
 const bot = new TelegramBot(token, {webHook: {
     port: process.env.PORT
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
-
+*/
 
 //const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
 
