@@ -45,7 +45,6 @@ const bot = new TelegramBot(token, {webHook: {
   } }, ); // Run out bot on local
 bot.setWebHook(`${url}/bot${token}`);
 */
-
 //const bot = new TelegramBot(token, { polling: true }); // Run out bot on local
 
 
@@ -85,6 +84,7 @@ bot.onText(/\/start/, function(msg) {
 bot.on('message', function(msg) {
 
     var chatId = msg.chat.id
+    console.log(chatId)
     // If user send contact message and check from database
     if(msg.contact != null) {
         var phone_number = msg.contact.phone_number.replace(/\+/g,'')
@@ -115,9 +115,11 @@ bot.on('message', function(msg) {
                 console.log('old user')
                 axios.post(`${api_link}api/user/client/store`, {
                     name: msg.contact.first_name,
+                    phone: msg.contact.phone_number,
                     telegramId: chatId,
                     surname: "-"
                 }).then((response) => {
+                    //console.log(response)
                     bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdingiz.`)
                     botMenu(chatId)
                 }, (error) => {
