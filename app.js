@@ -67,7 +67,7 @@ const menu = [
 // Starting point and request phone number
 bot.onText(/\/start/, function(msg) {
     var chatId = msg.chat.id
-    var hellomsg = `<b>Xush kelibsiz!</b>\nBuyurtma berish telefon raqamingizni yuboring.`
+    var hellomsg = `<b>Xush kelibsiz!</b>\nObke orqali buyurtma berish uchun telefon raqamingizni yuboring.`
     bot.sendPhoto(chatId, 'https://files.nodirbek.uz/obke.jpg', {
         'caption': hellomsg,
         'parse_mode': 'HTML',
@@ -106,7 +106,7 @@ bot.on('message', function(msg) {
                     telegramId: chatId,
                     surname: "-"
                 }).then((response) => {
-                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdizngiz.`)
+                    bot.sendMessage(chatId, `Botimizga muvaffaqiyatli ro'yhatdan o'tdingiz.`)
                     botMenu(chatId)
                 }, (error) => {
                 console.log(error);
@@ -458,7 +458,7 @@ bot.on("callback_query", function(query) {
                     quantity: data.quantity + initial_qunatity
                 }).then((response) => {
                     if(response.data.result == 'error') {
-                        bot.editMessageText(`❗️ Boshqa restorant taomini qo'shmoqchisiz.\nIltimos, bitta restarantda buyurtma qiling!\nAgar ushbu restorantdan buyurtma qilmoqchi bo'lsangiz, savatchangizni tozalang.`, {
+                        bot.editMessageText(`❗️ Iltimos, bir buyurtma qilishda bitta restorantdan taomlar tanlang!\nAgar ushbu restorantdan buyurtma qilmoqchi bo'lsangiz, savatchangizni tozalang.`, {
                             chat_id: query.message.chat.id,
                             message_id: query.message.message_id,
                             parse_mode: 'HTML',
